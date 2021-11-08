@@ -7,27 +7,63 @@ import traceback
 from datetime import datetime
 import os
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 import json
 import random
 
+def createexcelifnotexists():
+    filepath="database.xlsx"
+    if not os.path.isfile(filepath):
+        #if not exists file
+        wb = openpyxl.Workbook()
+        wb.save(filepath)
 def readfromexcel(sheet_name,row,col):
+    createexcelifnotexists()
     wb_obj = openpyxl.load_workbook("database.xlsx")
-    sheet_obj = wb_obj[sheet_name]
+    try:    
+        sheet_obj = wb_obj[sheet_name]
+    except KeyError:
+        wb_obj.create_sheet(sheet_name)
+        sheet_obj = wb_obj[sheet_name]
     return sheet_obj.cell(row = row, column = col).value
 
 def writetoexcel(sheet_name,row,col,value):
+    createexcelifnotexists()
     wb_obj = openpyxl.load_workbook("database.xlsx")
-    sheet_obj = wb_obj[sheet_name]
+    try:    
+        sheet_obj = wb_obj[sheet_name]
+    except KeyError:
+        wb_obj.create_sheet(sheet_name)
+        sheet_obj = wb_obj[sheet_name]
     sheet_obj.cell(row = row, column = col).value= value
     wb_obj.save("database.xlsx")
 def getmaxrow(sheet_name):
+    createexcelifnotexists()
     wb_obj = openpyxl.load_workbook("database.xlsx")
-    sheet_obj = wb_obj[sheet_name]
+    try:    
+        sheet_obj = wb_obj[sheet_name]
+    except KeyError:
+        wb_obj.create_sheet(sheet_name)
+        sheet_obj = wb_obj[sheet_name]
     return sheet_obj.max_row
 
 class Browser:
     def __init__(self,username,password):
         chrome_options = Options()
+        prefs = {
+            "download_restrictions": 3,
+            "download.open_pdf_in_system_reader": False,
+            "download.prompt_for_download": True,
+            "download.default_directory": "/dev/null",
+            "plugins.always_open_pdf_externally": False
+        }
+        chrome_options.add_experimental_option(
+            "prefs", prefs
+        )
+        chrome_options.add_argument("--disable-logging")
+        chrome_options.add_argument('log-level=3')
         prefs = {
             "download_restrictions": 3,
         }
@@ -36,10 +72,18 @@ class Browser:
         )
         driver = webdriver.Chrome('chromedriver',options=chrome_options)
         self.driver=driver          
+        self.setmobileview()
         self.username=username
         self.password=password
         self.login()
-        
+    def setmobileview(self):
+         # Apple iPhone X:      375, 812
+        # Apple iPhone XS Max: 414, 896
+        try:
+            self.driver.set_window_size(414, 896)
+        except :
+            print("Unexpected alert on resizing web driver!\n\t")
+            
     def login(self):
         self.driver.get("https://www.linkedin.com")
         try:
@@ -80,4 +124,5 @@ class Browser:
                 }
                 break
         pickle.dump(x , open("cookies.pkl","wb"))
+
         print('cookies saved')
