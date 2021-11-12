@@ -1,4 +1,6 @@
 
+from re import search
+from time import sleep
 from traceback import print_exc
 from Browser import *
 def saverow(sheet_name,*args):
@@ -20,11 +22,12 @@ def saverow(sheet_name,*args):
 
 class Linkedpy(Browser):
     def __init__(self):
-        self.username="bsccs45@gmail.com"
-        self.password="bsccs45"
+        self.username=open("username.txt").read()
+        self.password=open("password.txt").read()
         self.browser=Browser(self.username,self.password)
         self.driver=self.browser.driver
     def keepalive(self):
+        print("\nall work done , keeping bot alive\n")
         while True:
             time.sleep(1)
     def getprofile(self, link):
@@ -40,7 +43,7 @@ class Linkedpy(Browser):
         if(self.already_messaged[profile]=="done"):
             return True
         return False
-    def send_message(self,profile,message):
+    def send_message(self,profile,message,sleeptimeinseconds):
         if self.checkifmessagedalready(profile,message):
             print("already messaged ",profile)
             return
@@ -49,39 +52,27 @@ class Linkedpy(Browser):
             #clicking message button
             print("visiting ",profile)
             time.sleep(3)
-            #x=self.driver.find_element_by_xpath("/html/body/div[2]/section[1]/a").get_attribute("href")
-            #//*[@id="ember1329"]/div[2]/div[3]/div/a
-            #/html/body/div[6]/div[3]/div/div/div/div/div[3]/div/div/main/div/section/div[2]/div[3]/div/a
-            #<a href="/messaging/thread/new?recipients=List(urn%3Ali%3Afsd_profile%3AACoAADbO7qYBIkgepIc-TGxq2MTXmL5D3RKYM4I)&amp;composeOptionType=CONNECTION_MESSAGE&amp;controlUrn=compose_message_button&amp;referringModuleKey=NON_SELF_PROFILE_VIEW" class="message-anywhere-button pvs-profile-actions__action artdeco-button " disabled="" role="button">
-            #<!---->Message</a>
-                                                #/html/body/div[5]/div[3]/div/div/div/div/div[3]/div/div/main/div/section/div[2]/div[3]/div/a
+            #find message button
             x=self.driver.find_element_by_xpath(
                 '/html/body/div[6]/div[3]/div/div/div/div/div[3]/div/div/main/div/section/div[2]/div[3]/div/a'
                 +' | '+
                 '/html/body/div[5]/div[3]/div/div/div/div/div[3]/div/div/main/div/section/div[2]/div[3]/div/a')
             x.click()
             x=x.get_attribute("href")
-            print(x)
-            #self.driver.get(x)            
-            #sending text
-            #time.sleep(1000)    
-            
+            print(x)            
             self.driver.find_element_by_xpath("//*[contains(@aria-label, 'Write a message…')]").send_keys(message)
-            #self.driver.find_element_by_tag_name("textarea").send_keys(message)
             #clicking send button
             print("button click")
             time.sleep(3)
             self.driver.find_element_by_xpath("//button[text()='Send']").click()
             print("button clicked")
             time.sleep(3)
-            #/html/body/div[6]/aside/div[2]/header/section[2]/button[3]
-            #/html/body/div[6]/aside/div[2]/header/section[2]/button[3]
             self.driver.find_element_by_xpath("//button[@data-control-name='overlay.close_conversation_window']").click()
             print("popup closed")
-            #self.driver.find_element_by_xpath("/html/body/div[1]/div[3]/div/form/div[4]/button").click()
-            #id is <textarea id="messaging-reply" class="medium" name="message" placeholder="Write a message…"></textarea>
-            time.sleep(3)            
+            print("sleeping for ",sleeptimeinseconds," seconds")
+            time.sleep(sleeptimeinseconds)
         except:
+            print("\ncritical error\n")
             traceback.print_exc()
             time.sleep(1000)  
         
@@ -98,10 +89,6 @@ class Linkedpy(Browser):
                     elements=self.driver.find_element_by_xpath('/html/body/div[6]/div[3]/div/div/div/div/div[2]/div/div/main/div/section/div[2]/div[1]/ul/li['+str(i)+']/a'
                     +' | '+
                     '/html/body/div[5]/div[3]/div/div/div/div/div[2]/div/div/main/div/section/div[2]/div[1]/ul/li['+str(i)+']/a')
-                    #//*[@id="ember189"]/div[2]/div[1]/ul/li[2]/div[1]
-                    #/html/body/div[6]/div[3]/div/div/div/div/div[2]/div/div/main/div/section/div[2]/div[1]/ul/li[2]/div[1]/a/span[2]
-                    #/html/body/div[6]/div[3]/div/div/div/div/div[2]/div/div/main/div/section/div[2]/div[1]/ul/li[1]/div[2]/a
-                    #/html/body/div[6]/div[3]/div/div/div/div/div[2]/div/div/main/div/section/div[2]/div[1]/ul/li[1]/a 
                     a.append(elements)
                     print(elements,i)
                 except:
@@ -116,19 +103,50 @@ class Linkedpy(Browser):
         finally:
             pass
         return elements
-
-        #/html/body/div[5]/div[3]/div/div/div/div/div[2]/div/div/main/div/section/div[2]/div[1]/ul/li/div[2]/a
-    def sendmessagetoconnection(self):
+    def sendmessagetoconnection(self, sleeptimeinseconds=10):
         self.getmessagedict()
         count=0
         for i in self.getconnections():
             count+=1
             message=open("message.txt").read()
-            self.send_message(i,message)
+            self.send_message(i,message,sleeptimeinseconds)
             writetoexcel('message',col=1,row=count+1,value=str(i))
             writetoexcel('message',col=2,row=count+1,value="done")
-            
-    def search(self,searchstring,keywords=None,pageno=None):
+    def sendinvitetokeywords(self,keywords="programmer"):
+        
+        pageno=2
+        f=open("connected.txt","r")
+        visited=f.read().split("\n")
+        print("already visited ",visited)
+        for page in range(pageno+1):
+            links=self.searchforlinks("https://www.linkedin.com/search/results/people/?",keywords,page)
+            print("links fetched ",links)
+            for link in links:
+                if link in visited:
+                    print("already invited this person skipping ",link)
+                    continue
+                print("visiting ",link)
+                self.driver.get(link)
+                time.sleep(3)
+                print("clicking connect button")
+                    #/html/body/div[5]/div[3]/div/div/div/div/div[3]/div/div/main/div/section/div[2]/div[3]/div/button[1]
+                try:
+                    x=self.driver.find_element_by_xpath(
+                        '/html/body/div[6]/div[3]/div/div/div/div/div[3]/div/div/main/div/section/div[2]/div[3]/div/button[1]'
+                        +' | '+
+                        '/html/body/div[5]/div[3]/div/div/div/div/div[3]/div/div/main/div/section/div[2]/div[3]/div/button[1]')
+                    x.click()
+                    time.sleep(2)
+                    self.driver.find_element_by_xpath("//*[contains(@aria-label, 'Send now')]").click()
+                    f=open("connected.txt","a")
+                    f.write("\n"+link)
+                    f.close()
+                    visited.append(link)
+                except:
+                    traceback.print_exc()
+                    print("could not connect ",link)
+
+    def searchforlinks(self,searchstring="https://www.linkedin.com/search/results/people/?",keywords=None,pageno=None):
         if(keywords):
             if(searchstring!="https://www.linkedin.com/search/results/people/?"):
                 searchstring+="&"
@@ -151,7 +169,6 @@ class Linkedpy(Browser):
         
         x=list(set(x))
         #removing duplicates
-        print(len(x)," links found")
         for j in range(len(x)):
             try:
                 element=x[j]
@@ -159,6 +176,12 @@ class Linkedpy(Browser):
             except:
                 traceback.print_exc()
                 print("some problem with this obj \n",x[j])
+        print(len(x)," links found")
+        
+        return x
+    def search(self,searchstring,keywords=None,pageno=None):
+        x=self.searchforlinks(searchstring,keywords=None,pageno=None)
+        
         for j in range(len(x)):
             try:
                 self.analyse(x[j],getadvancedinfo=True)
@@ -224,7 +247,12 @@ class Linkedpy(Browser):
 #searchstring="https://www.linkedin.com/search/results/people/?"
 #keywords=input("enter the keywords ")
 #pageno=int(input("enter no of pages to search "))
-obj=Linkedpy()
 #obj.search(searchstring,keywords,pageno)
-obj.sendmessagetoconnection()
+
+obj=Linkedpy()
+#sending message to connections
+#obj.sendmessagetoconnection(sleeptimeinseconds=60)
+obj.sendinvitetokeywords()
 obj.keepalive()
+import schedule
+schedule.every().day.at("08:00").do(bedtime)
