@@ -12,7 +12,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 import json
 import random
-
+from proxymaker import *
 def createexcelifnotexists():
     filepath="database.xlsx"
     if not os.path.isfile(filepath):
@@ -57,7 +57,8 @@ class Browser:
             "download.open_pdf_in_system_reader": False,
             "download.prompt_for_download": True,
             "download.default_directory": "/dev/null",
-            "plugins.always_open_pdf_externally": False
+            "plugins.always_open_pdf_externally": False,
+            "profile.managed_default_content_settings.images": 2
         }
         chrome_options.add_experimental_option(
             "prefs", prefs
@@ -70,6 +71,8 @@ class Browser:
         chrome_options.add_experimental_option(
             "prefs", prefs
         )
+        PROXY = get_random_proxy()
+        chrome_options.add_argument('--proxy-server=%s' % PROXY)
         driver = webdriver.Chrome('chromedriver',options=chrome_options)
         self.driver=driver          
         self.setmobileview()
@@ -126,3 +129,6 @@ class Browser:
         pickle.dump(x , open("cookies.pkl","wb"))
 
         print('cookies saved')
+    def leave(self):
+        print(" killing the browser ")
+        self.driver.quit()

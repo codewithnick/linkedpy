@@ -40,8 +40,11 @@ class Linkedpy(Browser):
         print("already messaged \n",already_messaged)
         self.already_messaged=already_messaged
     def checkifmessagedalready(self,profile,message):
-        if(self.already_messaged[profile]=="done"):
-            return True
+        try:
+            if(self.already_messaged[profile]=="done"):
+                return True
+        except KeyError:
+            pass
         return False
     def send_message(self,profile,message,sleeptimeinseconds):
         if self.checkifmessagedalready(profile,message):
@@ -103,28 +106,34 @@ class Linkedpy(Browser):
         finally:
             pass
         return elements
-    def sendmessagetoconnection(self, sleeptimeinseconds=10):
+    def sendmessagetoconnection(self, sleeptimeinseconds=10,limit=10):
         self.getmessagedict()
         count=0
+        message=open("message.txt").read()
         for i in self.getconnections():
             count+=1
-            message=open("message.txt").read()
             self.send_message(i,message,sleeptimeinseconds)
             writetoexcel('message',col=1,row=count+1,value=str(i))
             writetoexcel('message',col=2,row=count+1,value="done")
-    def sendinvitetokeywords(self,keywords="programmer"):
+            if(count==limit):
+                print("reached process limit ending")
+                break
+    def sendinvitetokeywords(self,keywords="programmer",startpage=0,pageno=2,limit=10):
         
-        pageno=2
+        
         f=open("connected.txt","r")
         visited=f.read().split("\n")
         print("already visited ",visited)
-        for page in range(pageno+1):
+        for page in range(startpage,pageno+1):
             links=self.searchforlinks("https://www.linkedin.com/search/results/people/?",keywords,page)
             print("links fetched ",links)
             for link in links:
                 if link in visited:
                     print("already invited this person skipping ",link)
                     continue
+                if(limit==0):
+                    print("limit reached exiting process")
+                    break
                 print("visiting ",link)
                 self.driver.get(link)
                 time.sleep(3)
@@ -141,6 +150,7 @@ class Linkedpy(Browser):
                     f=open("connected.txt","a")
                     f.write("\n"+link)
                     f.close()
+                    limit-=1
                     visited.append(link)
                 except:
                     traceback.print_exc()
@@ -248,11 +258,15 @@ class Linkedpy(Browser):
 #keywords=input("enter the keywords ")
 #pageno=int(input("enter no of pages to search "))
 #obj.search(searchstring,keywords,pageno)
-
-obj=Linkedpy()
-#sending message to connections
-#obj.sendmessagetoconnection(sleeptimeinseconds=60)
-obj.sendinvitetokeywords()
-obj.keepalive()
+def loop():
+    obj=Linkedpy()
+    #sending message to connections
+    obj.sendmessagetoconnection(sleeptimeinseconds=60)
+    obj.sendinvitetokeywords()
+    obj.leave()
 import schedule
-schedule.every().day.at("08:00").do(bedtime)
+schedule.every().day.at("08:30").do(loop)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
