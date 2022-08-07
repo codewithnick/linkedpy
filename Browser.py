@@ -72,7 +72,7 @@ class Browser:
             "prefs", prefs
         )
         PROXY = get_random_proxy()
-        chrome_options.add_argument('--proxy-server=%s' % PROXY)
+        #chrome_options.add_argument('--proxy-server=%s' % PROXY)
         driver = webdriver.Chrome('chromedriver',options=chrome_options)
         self.driver=driver          
         self.setmobileview()

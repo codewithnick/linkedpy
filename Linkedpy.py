@@ -189,6 +189,24 @@ class Linkedpy(Browser):
         print(len(x)," links found")
         
         return x
+    def unconnect(self,maxno=50):
+        self.driver.get("https://www.linkedin.com/mynetwork/invite-connect/connections/")
+        time.sleep(3)
+        elems=self.driver.find_elements_by_class_name("artdeco-dropdown__trigger")
+        print("removing connections")
+        for elem in elems[3:maxno+3]:
+            try:
+                elem.click()
+                time.sleep(3)
+                drop=elem.find_element_by_xpath("./following-sibling::div")
+                drop.click()
+                time.sleep(3)
+                self.driver.find_elements_by_class_name("artdeco-modal__confirm-dialog-btn")[1].click()
+                time.sleep(3)
+            except:
+                pass
+        print("removing connections procedure complete sleeping for a hour")
+        time.sleep(60 *60)
     def search(self,searchstring,keywords=None,pageno=None):
         x=self.searchforlinks(searchstring,keywords=None,pageno=None)
         
@@ -264,8 +282,15 @@ def loop():
     obj.sendmessagetoconnection(sleeptimeinseconds=60)
     obj.sendinvitetokeywords()
     obj.leave()
+
+def clearloop():
+    obj=Linkedpy()
+    obj.unconnect()
+
 import schedule
 schedule.every().day.at("08:30").do(loop)
+schedule.every().week().do(clearloop)
+loop()
 
 while True:
     schedule.run_pending()
